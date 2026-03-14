@@ -6,11 +6,15 @@ set -e
 
 # Конфигурация
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_DIR="$(dirname "$SCRIPT_DIR")"
-WORKSPACE="$HOME/Github/DS-strategy"
-PROMPTS_DIR="$REPO_DIR/prompts"
+ROLE_DIR="$(dirname "$SCRIPT_DIR")"
+ROLES_DIR="$(dirname "$ROLE_DIR")"
+TEMPLATE_DIR="$(dirname "$ROLES_DIR")"
+WORKSPACE_ROOT="$(dirname "$TEMPLATE_DIR")"
+WORKSPACE="$WORKSPACE_ROOT/DS-strategy"
+PROMPTS_DIR="$ROLE_DIR/prompts"
 LOG_DIR="$HOME/logs/strategist"
-CLAUDE_PATH="{{CLAUDE_PATH}}"
+CLAUDE_PATH="claude"
+SYNC_SCRIPT="$SCRIPT_DIR/sync-governance-state.py"
 
 # AI CLI: переопределение через переменные окружения
 # По умолчанию: Claude Code. Примеры:
@@ -43,7 +47,7 @@ notify() {
 
 notify_telegram() {
     local scenario="$1"
-    "{{WORKSPACE_DIR}}/FMT-exocortex-template/roles/synchronizer/scripts/notify.sh" strategist "$scenario" >> "$LOG_FILE" 2>&1 || true
+    "$TEMPLATE_DIR/roles/synchronizer/scripts/notify.sh" strategist "$scenario" >> "$LOG_FILE" 2>&1 || true
 }
 
 fetch_wakatime_data() {
@@ -53,6 +57,59 @@ fetch_wakatime_data() {
         "$fetch_script" "$mode" 2>/dev/null || echo "(WakaTime данные недоступны)"
     else
         echo "(fetch-wakatime.sh не найден)"
+    fi
+}
+
+find_python() {
+    if command -v python3 >/dev/null 2>&1; then
+        echo "python3"
+        return 0
+    fi
+    if command -v python >/dev/null 2>&1; then
+        echo "python"
+        return 0
+    fi
+    return 1
+}
+
+scenario_needs_sync() {
+    case "$1" in
+        "day-close"|"session-prep"|"strategy-session")
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+sync_governance_state() {
+    local scenario="$1"
+    if ! scenario_needs_sync "$scenario"; then
+        return 0
+    fi
+
+    local python_bin
+    python_bin=$(find_python) || {
+        log "ERROR: python3/python not found; cannot sync governance state"
+        return 1
+    }
+
+    log "Running deterministic governance sync for scenario: $scenario"
+    "$python_bin" "$SYNC_SCRIPT" --workspace-root "$WORKSPACE_ROOT" >> "$LOG_FILE" 2>&1
+    log "Completed deterministic governance sync"
+}
+
+persist_workspace_changes() {
+    local scenario="$1"
+    if [ -n "$(git -C "$WORKSPACE" status --porcelain 2>/dev/null)" ]; then
+        log "Detected uncommitted changes after scenario: $scenario"
+        git -C "$WORKSPACE" add -A
+        if ! git -C "$WORKSPACE" diff --cached --quiet 2>/dev/null; then
+            git -C "$WORKSPACE" commit -m "chore: persist strategist ${scenario} outputs" >> "$LOG_FILE" 2>&1 \
+                && log "Committed workspace changes for $scenario" \
+                || log "WARN: auto-commit failed for $scenario"
+        fi
     fi
 }
 
@@ -92,6 +149,9 @@ run_claude() {
     "$AI_CLI" $AI_CLI_EXTRA_FLAGS \
         $AI_CLI_PROMPT_FLAG "$prompt" \
         >> "$LOG_FILE" 2>&1
+
+    sync_governance_state "$command_file"
+    persist_workspace_changes "$command_file"
 
     log "Completed scenario: $command_file"
 
@@ -171,7 +231,7 @@ case "$1" in
         log "Sunday: running week review"
         run_claude "week-review"
         # Fallback push for Knowledge Index (optional, skip if repo doesn't exist)
-        KI_REPO="{{WORKSPACE_DIR}}/DS-Knowledge-Index-{{GITHUB_USER}}"
+        KI_REPO="$WORKSPACE_ROOT/DS-Knowledge-Index-asf-denis-system"
         if [ -d "$KI_REPO/.git" ]; then
             if git -C "$KI_REPO" log --oneline -1 --since="1 hour ago" --grep="week-review" 2>/dev/null | grep -q .; then
                 git -C "$KI_REPO" push >> "$LOG_FILE" 2>&1 && log "Pushed Knowledge Index (fallback)" || log "WARN: KI push failed"

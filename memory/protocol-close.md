@@ -27,11 +27,14 @@
    - Классифицировать → маршрутизировать → формализовать → валидировать
    - Показать Extraction Report → получить одобрение
    - Применить одобренные (accept → Pack/CLAUDE.md/memory)
-2. Обновить MEMORY.md (статус РП) + `DS-strategy/docs/WP-REGISTRY.md` (если статус РП изменился)
+2. **Детерминированный sync governance-state**:
+   - Запусти `python c:/Users/Денис/projects/github/FMT-exocortex-template/roles/strategist/scripts/sync-governance-state.py`
+   - Скрипт обязан синхронизировать `MEMORY.md` из актуального WeekPlan, обновить `DS-strategy/docs/WP-REGISTRY.md` и пересобрать dated snapshot в `DS-strategy/exocortex/`
+   - Если ручная правка `MEMORY.md` и результат скрипта расходятся — доверяй скрипту и WeekPlan как источнику для недельных статусов
 3. Зафиксировать: что сделано, что осталось
 4. Закоммитить (с подтверждением)
 5. Обновить `DS-my-strategy/current/Plan W{N}...` (статусы РП)
-6. Синхронизировать backup: `memory/ + CLAUDE.md → DS-my-strategy/exocortex/`
+6. Проверить результат sync: `MEMORY.md` обновлён, `WP-REGISTRY.md` синхронизирован, dated backup создан в `DS-my-strategy/exocortex/`
 7. **WP Context File:**
    - in_progress + ≥2 сессий → обновить `DS-my-strategy/inbox/WP-{N}-{slug}.md`
    - done → `mv inbox/WP-{N}-*.md → archive/wp-contexts/` (сразу, не откладывая)
@@ -76,14 +79,14 @@
 ## Чеклист Close
 
 - [ ] Все изменения закоммичены и запушены
-- [ ] MEMORY.md обновлён (статусы РП)
+- [ ] MEMORY.md обновлён (через `sync-governance-state.py`)
 - [ ] DS-my-strategy/current/Plan обновлён
 - [ ] Captures применены
 - [ ] **Selective Reindex:** Pack изменены? → `selective-reindex.sh`
 - [ ] **Repo CLAUDE.md:** feat-коммиты → новые правила для CLAUDE.md репо?
 - [ ] **WP context:** коммиты реализуют пункт WP-плана → пункт done?
 - [ ] **Draft-list:** Pack обогащён → предложить черновик? Черновики из сессии → draft-list обновлён?
-- [ ] Backup → DS-my-strategy/exocortex/ синхронизирован
+- [ ] Backup → DS-my-strategy/exocortex/ синхронизирован (dated snapshot)
 - [ ] Context file: done → `mv inbox/WP-*.md → archive/wp-contexts/` (сразу при Close)
 - [ ] Отчёт Close сформирован
 - [ ] WP Context File создан/обновлён при ПЕРВОМ Close
