@@ -1,6 +1,6 @@
 # IWE: справочник для бота
 
-> Краткая справка по Intelligent Working Environment (IWE) для поиска и ответов бота.
+> Краткая справка по Intellectual Work Environment (IWE) для поиска и ответов бота.
 > Полная установка: [SETUP-GUIDE.md](SETUP-GUIDE.md)
 >
 > **Source-of-truth:** Pack-сущности платформы (доступны через MCP `knowledge-mcp`):
@@ -14,7 +14,7 @@
 
 ## Что такое IWE
 
-IWE (Intelligent Working Environment) — интеллектуальная рабочая среда. Описывается через пять видов (FPF A.7: **Роль → Метод → Рабочий продукт**):
+IWE (Intellectual Work Environment) — интеллектуальная рабочая среда. Описывается через пять видов (FPF A.7: **Роль → Метод → Рабочий продукт**):
 
 | Вид | Что | Примеры |
 |-----|-----|---------|
@@ -175,7 +175,7 @@ export TELEGRAM_CHAT_ID="your-id"
 
 | Термин | Значение |
 |--------|---------|
-| IWE | Intelligent Working Environment — интеллектуальная рабочая среда |
+| IWE | Intellectual Work Environment — интеллектуальная рабочая среда |
 | Экзокортекс | Подсистема памяти IWE (CLAUDE.md + MEMORY.md + memory/) |
 | Pack | Предметная база знаний (source-of-truth для домена) |
 | DS-strategy | Личный стратегический хаб (приватный репо) |
