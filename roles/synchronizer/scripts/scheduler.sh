@@ -10,15 +10,20 @@
 
 set -euo pipefail
 
+# Cross-platform date offset: portable_date_offset <days_back> <format>
+portable_date_offset() {
+    local days="$1"
+    local fmt="${2:-%Y-%m-%d}"
+    date -v-${days}d +"$fmt" 2>/dev/null || date -d "$days days ago" +"$fmt" 2>/dev/null
+}
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SYNC_DIR="$(dirname "$SCRIPT_DIR")"
-ROLES_DIR="$(dirname "$SYNC_DIR")"
-TEMPLATE_DIR="$(dirname "$ROLES_DIR")"
-WORKSPACE_ROOT="$(dirname "$TEMPLATE_DIR")"
 STATE_DIR="$HOME/.local/state/exocortex"
 LOG_DIR="$HOME/logs/synchronizer"
 LOG_FILE="$LOG_DIR/scheduler-$(date +%Y-%m-%d).log"
 
+ROLES_DIR="{{WORKSPACE_DIR}}/FMT-exocortex-template/roles"
 NOTIFY_SH="$SCRIPT_DIR/notify.sh"
 
 # Role runner discovery: reads runner path from role.yaml, fallback to convention
@@ -93,7 +98,7 @@ cleanup_state() {
 # Разделяет архивацию (мгновенно) и генерацию (15+ мин Claude Code).
 # Гарантирует: даже если генерация ещё не началась, старый план не висит в current/.
 pre_archive_dayplan() {
-    local strategy_dir="$WORKSPACE_ROOT/DS-strategy"
+    local strategy_dir="{{WORKSPACE_DIR}}/DS-strategy"
     local archive_dir="$strategy_dir/archive/day-plans"
     local moved=0
 
@@ -162,7 +167,7 @@ dispatch() {
         ran=1
     elif (( 10#$HOUR < 12 )); then
         local yesterday
-        yesterday=$(date -v-1d +%Y-%m-%d 2>/dev/null || date -d "yesterday" +%Y-%m-%d 2>/dev/null || true)
+        yesterday=$(portable_date_offset 1)
         if [ -n "$yesterday" ] && [ ! -f "$STATE_DIR/strategist-note-review-$yesterday" ]; then
             log "→ strategist note-review (catch-up for yesterday $yesterday)"
             if "$STRATEGIST_SH" note-review >> "$LOG_FILE" 2>&1; then
@@ -181,6 +186,17 @@ dispatch() {
             mark_done "synchronizer-code-scan"
         else
             log "WARN: code-scan failed (will retry next dispatch)"
+        fi
+        ran=1
+    fi
+
+    # --- Синхронизатор: dt-collect (после code-scan) ---
+    if ! ran_today "synchronizer-dt-collect"; then
+        log "→ synchronizer dt-collect (hour=$HOUR)"
+        if "$SCRIPT_DIR/dt-collect.sh" >> "$LOG_FILE" 2>&1; then
+            mark_done "synchronizer-dt-collect"
+        else
+            log "WARN: dt-collect failed (will retry next dispatch)"
         fi
         ran=1
     fi

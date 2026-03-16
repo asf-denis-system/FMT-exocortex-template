@@ -3,31 +3,23 @@
 > **Триггер:** Автоматический — Пн 00:00 (полночь Вс→Пн, launchd).
 > Создаёт WeekReport для клуба. Служит входом для session-prep (Пн 4:00).
 
-> Source-of-truth: DP.AGENT.012-strategist (PACK-digital-platform). Алгоритм полностью описан ниже.
+Источник сценария: {{WORKSPACE_DIR}}/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/scenarios/scheduled/03-week-review.md
 
 ## Контекст
 
-- **WeekPlan:** c:/Users/Денис/projects/github/DS-strategy/current/WeekPlan W*.md
-- **Шаблон:** см. секцию «Шаблон WeekReport» ниже
-
-### 0. WakaTime — время работы за неделю
-
-> Данные автоматически подставляются из WakaTime API.
-> Включи секцию WakaTime в WeekReport после метрик коммитов.
-> Если данных нет — напиши: «WakaTime: нет данных за неделю».
-
-{{WAKATIME_WEEK}}
+- **WeekPlan:** {{WORKSPACE_DIR}}/DS-strategy/current/WeekPlan W*.md
+- **Шаблон:** {{WORKSPACE_DIR}}/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/templates/reviews/weekly-review.md
 
 ## Алгоритм
 
 ### 1. Сбор данных (Стратег собирает сам)
 
 ```bash
-# Для КАЖДОГО репо в c:/Users/Денис/projects/github/:
-git -C c:/Users/Денис/projects/github/<repo> log --since="last monday 00:00" --until="today 00:00" --oneline --no-merges
+# Для КАЖДОГО репо в {{WORKSPACE_DIR}}/:
+git -C {{WORKSPACE_DIR}}/<repo> log --since="last monday 00:00" --until="today 00:00" --oneline --no-merges
 ```
 
-- Пройди по ВСЕМ репозиториям в `c:/Users/Денис/projects/github/`
+- Пройди по ВСЕМ репозиториям в `{{WORKSPACE_DIR}}/`
 - Загрузи текущий WeekPlan из `DS-strategy/current/`
 - Сопоставь коммиты с РП из WeekPlan
 - Определи статус каждого РП: done / partial / not started
@@ -58,17 +50,15 @@ git -C c:/Users/Денис/projects/github/<repo> log --since="last monday 00:00
 1. Создай `current/WeekReport W{N} YYYY-MM-DD.md`
 2. Закоммить в DS-strategy
 
-### 6. Создать пост для клуба (опционально)
+### 6. Создать пост для клуба (авто-публикация)
 
-> Шаг выполняется только если у пользователя настроен Knowledge Index — surface downstream репо для публикаций.
-> Проверь: существует ли директория `c:/Users/Денис/projects/github/DS-Knowledge-Index-asf-denis-system/`?
-> Если нет — пропусти шаг 6 полностью.
+> Пост итогов недели публикуется автоматически в Пн 07:14 МСК. Стратег создаёт его сразу со `status: ready`.
 
 1. Переключись на **роль Автора (R4)** и на основе WeekReport сформируй пост для клуба.
 
-   **Обязательно прочитай** `c:/Users/Денис/projects/github/DS-Knowledge-Index-asf-denis-system/CLAUDE.md` — полные инструкции роли Автора:
+   **Обязательно прочитай** `{{WORKSPACE_DIR}}/DS-Knowledge-Index/CLAUDE.md` — полные инструкции роли Автора:
    - § 2 — стандарт названий для итогов недели
-   - § 3 — формат поста: аудитория `community`, структура для тега `итоги-недели`
+   - § 3 — формат поста: аудитория `community`, структура для тега `итоги-недели` (4 уровня влияния, голос от первого лица, 400-700 слов)
 
    Стратег отвечает за **данные** (метрики, факты, сравнения). Автор отвечает за **подачу** (голос, структура, стиль).
 
@@ -78,9 +68,11 @@ git -C c:/Users/Денис/projects/github/<repo> log --since="last monday 00:00
    - Carry-over → W{N+1} (из WeekReport, секция «Carry-over»)
    - Фокус следующей недели (из WeekReport, секция «Следующая неделя»)
 
+   Автор использует carry-over и фокус для финала поста — «идеи на следующую неделю».
+
    Выбери лучшее название сам (в автоматическом режиме нет пользователя для выбора).
 
-2. Создай файл `c:/Users/Денис/projects/github/DS-Knowledge-Index-asf-denis-system/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N}.md`
+2. Создай файл `{{WORKSPACE_DIR}}/DS-Knowledge-Index/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N}.md`
 
 3. Frontmatter:
 
@@ -98,8 +90,8 @@ content_plan: null
 ---
 ```
 
-4. Обнови `c:/Users/Денис/projects/github/DS-Knowledge-Index-asf-denis-system/docs/README.md` — добавь строку в начало текущего месяца
-5. Закоммить и запушь Knowledge Index (git add docs/ && git commit && git push)
+4. Обнови `{{WORKSPACE_DIR}}/DS-Knowledge-Index/docs/README.md` — добавь строку в начало текущего месяца
+5. Закоммить и запушь `DS-Knowledge-Index` (git add docs/ && git commit && git push)
 
 **Шаблон WeekReport:**
 
@@ -142,6 +134,23 @@ agent: Стратег
 *Создан: YYYY-MM-DD (Week Review)*
 ```
 
+### 7. Запись ссылки на пост в WeekPlan
+
+> **ОБЯЗАТЕЛЬНО.** После создания поста — записать ссылку в WeekPlan текущей недели.
+
+1. Открой текущий `DS-strategy/current/WeekPlan W{N}*.md`
+2. Найди секцию «Контент-план W{N}» (или создай, если нет)
+3. Добавь строку:
+
+```markdown
+**Пост итогов W{N-1}:** [название](https://github.com/{{GITHUB_USER}}/DS-Knowledge-Index/blob/main/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N-1}.md) — status: ready → авто-публикация Пн 07:14
+```
+
+4. Закоммить вместе с остальными изменениями
+
+> Эта ссылка позволяет: (а) Стратегу в session-prep видеть, какой пост создан, (б) пользователю проверить пост до публикации, (в) day-plan знать, что контент готов.
+
 Результат:
 - WeekReport в `current/` — как вход для session-prep
-- (Опционально) Пост итогов в Knowledge Index со `status: ready`
+- Пост итогов в `DS-Knowledge-Index/docs/{YYYY}/` со `status: ready` — авто-публикация Пн 07:14
+- Ссылка на пост в WeekPlan — для отслеживания

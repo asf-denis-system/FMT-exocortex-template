@@ -1,0 +1,80 @@
+name: Notify Template Update
+
+# Ежедневно в 7:28 MSK (4:28 UTC) проверяет коммиты за 24ч
+# и отправляет дайджест подписчикам через webhook бота @aist_me_bot.
+# Также можно запустить вручную для тестирования.
+
+on:
+  schedule:
+    - cron: '28 4 * * *'  # 7:28 MSK
+  workflow_dispatch:       # ручной запуск для тестирования
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # нужна полная история для git log
+
+      - name: Check for recent commits
+        id: check
+        run: |
+          COMMITS=$(git log --since="24 hours ago" --oneline 2>/dev/null)
+          if [ -z "$COMMITS" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No commits in the last 24 hours"
+          else
+            COMMIT_COUNT=$(echo "$COMMITS" | wc -l | tr -d ' ')
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "commit_count=$COMMIT_COUNT" >> "$GITHUB_OUTPUT"
+            echo "$COMMIT_COUNT commits found"
+          fi
+
+      - name: Extract changelog entry
+        if: steps.check.outputs.has_changes == 'true'
+        id: changelog
+        run: |
+          if [ ! -f CHANGELOG.md ]; then
+            echo "entry=Нет CHANGELOG.md" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          VERSION=$(grep -m1 '^## \[' CHANGELOG.md | sed 's/## //')
+          ENTRY=$(sed -n '/^## \[/{n; :loop; /^## \[/q; p; n; b loop}' CHANGELOG.md | head -30)
+
+          echo "$VERSION" > /tmp/changelog_version.txt
+          echo "$ENTRY" > /tmp/changelog_entry.txt
+
+      - name: Send notification via bot webhook
+        if: steps.check.outputs.has_changes == 'true'
+        env:
+          BOT_WEBHOOK_URL: ${{ secrets.BOT_WEBHOOK_URL }}
+          TEMPLATE_WEBHOOK_SECRET: ${{ secrets.TEMPLATE_WEBHOOK_SECRET }}
+        run: |
+          VERSION=$(cat /tmp/changelog_version.txt)
+          ENTRY=$(cat /tmp/changelog_entry.txt)
+          COMMIT_COUNT="${{ steps.check.outputs.commit_count }}"
+
+          # Send to bot webhook (bot broadcasts to subscribers)
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${BOT_WEBHOOK_URL}/api/template-update" \
+            -H "Content-Type: application/json" \
+            -H "X-Webhook-Secret: ${TEMPLATE_WEBHOOK_SECRET}" \
+            -d "$(jq -n \
+              --arg version "$VERSION" \
+              --arg changelog "$ENTRY" \
+              --arg commit_count "$COMMIT_COUNT" \
+              '{version: $version, changelog: $changelog, commit_count: ($commit_count | tonumber)}')")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✓ Bot webhook responded: $BODY"
+          else
+            echo "✗ Bot webhook failed (HTTP $HTTP_CODE): $BODY"
+            exit 1
+          fi

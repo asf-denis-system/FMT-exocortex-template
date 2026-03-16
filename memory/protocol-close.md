@@ -1,10 +1,111 @@
-# Протокол Close (Закрытие сессии)
+# Протокол Close (ОРЗ-фрактал)
 
-> **Триггер:** «закрываю сессию», «всё», «закрывай», или РП завершён.
+> **Два масштаба:** День и Сессия. Триггер определяет масштаб.
 > **Источник:** CLAUDE.md § 2 (slim) → этот файл.
-> **«Закрывай» = push сразу без вопросов** (пользователь дал согласие словом).
 
 ---
+
+## § Масштаб: День (Day Close)
+
+> **Триггер:** «закрываю день» / «итоги дня»
+> **Роль:** R1 Стратег
+> **Формат:** Стратег собирает данные → показывает черновик → пользователь одобряет → Стратег записывает в DayPlan
+
+### Алгоритм Day Close
+
+#### 1. Сбор данных
+
+```bash
+for repo in $(ls {{WORKSPACE_DIR}}/); do
+  if [ -d {{WORKSPACE_DIR}}/$repo/.git ]; then
+    commits=$(git -C {{WORKSPACE_DIR}}/$repo log --since="today 00:00" --oneline --no-merges 2>/dev/null)
+    [ -n "$commits" ] && echo "=== $repo ===" && echo "$commits"
+  fi
+done
+```
+
+Сопоставить коммиты с таблицей «На сегодня» из DayPlan → определить статусы: done / partial / not started.
+
+#### 2. Черновик итогов (показать пользователю)
+
+Стратег формирует и выводит на экран:
+
+**а) Обзор:** таблица «что сделано» (РП × статус)
+
+**б) Что нового узнал:** Стратег подсвечивает новые знания за день:
+- Captures, записанные в Pack
+- Различения, добавленные в hard-distinctions
+- Инсайты из сессий (архитектурные решения, паттерны)
+- Новое из руководства / курса (если был слот саморазвития)
+
+> Это экзоскелет: агент помогает увидеть, пользователь рефлексирует сам.
+
+**в) Похвала:** Стратег предлагает формулировку — что получилось, что было непросто но сделано. Пользователь корректирует.
+
+**г) Не забыто?** Стратег проверяет:
+- Незакоммиченные изменения (`git status` по всем репо)
+<!-- YOUR CUSTOM CHECKS HERE -->
+- Незаписанные мысли? (спросить пользователя)
+- Обещания кому-то? (спросить пользователя)
+
+**д) Видео за день:**
+- Если `video.enabled: true` → запустить `video-scan.sh --new` (что записано за день)
+- Обработанные видео (есть транскрипт + привязка к РП) → пометить в логе
+- Необработанные → перенести в задел на завтра
+
+**е) Задел на завтра** (= Agent→Agent handoff: вечерний Стратег → утренний Стратег):
+- С чего начать утром
+- Какой контекст подготовить (файлы, WP context files)
+- Незавершённые РП: что именно осталось, следующий шаг
+
+#### 3. Согласование
+
+Пользователь читает черновик → корректирует → одобряет.
+
+#### 4. Запись
+
+- Дописать секцию «Итоги дня» в текущий `DayPlan YYYY-MM-DD.md`:
+
+```markdown
+---
+
+## Итоги дня
+
+| РП | Что сделано | Статус |
+|----|-------------|--------|
+| #N | ... | done / partial |
+
+**Коммиты:** N в M репо
+
+**Что нового узнал:** ...
+
+**Похвала:** ...
+
+**Не забыто:** всё чисто / [что осталось]
+
+**Завтра начать с:** ...
+
+*Закрыто: YYYY-MM-DD HH:MM*
+```
+
+- Обновить статусы РП в WeekPlan + MEMORY.md
+- Backup: `memory/ + CLAUDE.md → DS-strategy/exocortex/`
+- Закоммитить DS-strategy
+
+---
+
+## § Масштаб: Сессия (Session Close)
+
+> **Триггер:** «закрываю сессию», «всё», «закрывай», или РП завершён.
+> **Роль:** R6 Кодировщик
+> **«Закрывай» = push сразу без вопросов** (пользователь дал согласие словом).
+
+### Различение: Сессия ≠ День
+
+| | День | Сессия |
+|---|------|--------|
+| **Контекст** | Отдельная сессия-ритуал (только триггер, без задания) | Внутри рабочей сессии, после конкретной работы |
+| **Что пишем** | Итоги дня + **«На завтра»** (задел) | Итоги работы + **«Осталось»** (незавершённое по РП) |
 
 ## Exit Protocol (ОБЯЗАТЕЛЬНО при завершении каждой роли)
 
@@ -21,40 +122,41 @@
 
 ## Алгоритм Close
 
-0. **Pull** → `cd DS-my-strategy && git pull --rebase`
+0. **Pull** → `cd DS-strategy && git pull --rebase`
 1. **Knowledge Extraction** → прочитай и выполни `DS-IT-systems/DS-ai-systems/extractor/prompts/session-close.md`:
    - Собрать отложенные captures + проверить пропущенные
    - Классифицировать → маршрутизировать → формализовать → валидировать
    - Показать Extraction Report → получить одобрение
    - Применить одобренные (accept → Pack/CLAUDE.md/memory)
-2. **Детерминированный sync governance-state**:
-   - Запусти `python c:/Users/Денис/projects/github/FMT-exocortex-template/roles/strategist/scripts/sync-governance-state.py`
-   - Скрипт обязан синхронизировать `MEMORY.md` из актуального WeekPlan, обновить `DS-strategy/docs/WP-REGISTRY.md` и пересобрать dated snapshot в `DS-strategy/exocortex/`
-   - Если ручная правка `MEMORY.md` и результат скрипта расходятся — доверяй скрипту и WeekPlan как источнику для недельных статусов
+2. Обновить MEMORY.md (статус РП) + **WP-REGISTRY.md** (`DS-strategy/docs/WP-REGISTRY.md`): обновить статус РП, дату. Если новые РП создавались в Open — проверить, что они уже в реестре
 3. Зафиксировать: что сделано, что осталось
 4. Закоммитить (с подтверждением)
-5. Обновить `DS-my-strategy/current/Plan W{N}...` (статусы РП)
-6. Проверить результат sync: `MEMORY.md` обновлён, `WP-REGISTRY.md` синхронизирован, dated backup создан в `DS-my-strategy/exocortex/`
+5. Обновить `DS-strategy/current/Plan W{N}...` (статусы РП). **Grep по номеру РП** (`grep -n "| {N} |" WeekPlan...`) — РП может упоминаться в нескольких таблицах (основная + «План на день» + inbox triage). Обновить ВСЕ упоминания
+5b. **Обновить DayPlan** (`DS-strategy/current/DayPlan YYYY-MM-DD.md`): статусы **всех строк** в таблице «План на сегодня» — и РП, и ad-hoc задач (без номера). Done → зачеркнуть строку. Без этого шага DayPlan остаётся стейл до Day Close.
+6. Синхронизировать backup: `memory/ + CLAUDE.md → DS-strategy/exocortex/`
 7. **WP Context File:**
-   - in_progress + ≥2 сессий → обновить `DS-my-strategy/inbox/WP-{N}-{slug}.md`
+   - in_progress + ≥2 сессий → обновить `DS-strategy/inbox/WP-{N}-{slug}.md`
    - done → `mv inbox/WP-{N}-*.md → archive/wp-contexts/` (сразу, не откладывая)
    - Проверка: РП есть в WeekPlan и MEMORY.md? Нет → добавить
 8. **Незавершённое и идеи:**
    - Недоделка по РП → context file (секция «Осталось»)
    - Идея развития системы → `<repo>/MAPSTRATEGIC.md`
-   - Новая задача → `DS-my-strategy/inbox/captures.md` или fleeting-notes.md
-   - Зерно для поста → `DS-my-strategy/drafts/draft-list.md`
+   - Новая задача → `DS-strategy/inbox/captures.md` или fleeting-notes.md
+   - Зерно для поста → `DS-strategy/drafts/draft-list.md`
 9. **Draft-list проверка:**
    - Были captures в Pack? → Предложить: «Pack обогащён — добавить черновик для поста?»
    - Обновить draft-list.md если создавались черновики в этой сессии
 
 ---
 
-## Шаблон отчёта Close
+## Шаблон отчёта Close (= Agent→Human handoff artifact)
+
+> Close report — это handoff-артефакт (PROCESSES.md §3.3). Цель: передать человеку достаточно контекста для проверки результата.
 
 ```
 **РП:** #N — [название]
 **Статус:** done / in_progress
+**Класс верификации:** closed-loop / open-loop / problem-framing
 
 **Исполнитель:** A1 Claude Code (модель: Opus / Sonnet / Haiku)
 **Роли в сессии:**
@@ -64,10 +166,11 @@
 - R1 Стратег: [что обновил / не активирован]
 
 **Сделано:** [итог]
-**Captures:** [N → куда]
+**Captures:** [N → Pack, N → DS docs/, N → IWE root (CLAUDE.md, memory/, протоколы)]. Разделять по слоям: Pack (доменное знание), DS (реализационное), IWE root (кросс-системные правила и протоколы). «0» только если ничего не записано никуда.
+**Что проверить:** [конкретно — что требует внимания человека, в чём не уверен]
 **Git:** закоммичено + запушено ✅
-**Деплой бота:** залито на `pilot` ✅ / на `new-architecture` не заливалось
-**Осталось:** ничего / [что]
+<!-- YOUR CUSTOM CHECKS HERE -->
+**Осталось:** ничего / [что — это Agent→Agent handoff для следующей сессии]
 ```
 
 > Указывать только активированные роли. Ключевые (R1, R2) — указывать всегда (даже «не активирован»).
@@ -78,15 +181,20 @@
 
 ## Чеклист Close
 
+- [ ] **Session log:** удалить строку этой сессии из `DS-strategy/inbox/open-sessions.log`
 - [ ] Все изменения закоммичены и запушены
-- [ ] MEMORY.md обновлён (через `sync-governance-state.py`)
-- [ ] DS-my-strategy/current/Plan обновлён
+- [ ] MEMORY.md обновлён (статусы РП)
+- [ ] WP-REGISTRY.md обновлён (статусы + новые РП)
+- [ ] DS-strategy/current/Plan (WeekPlan) обновлён
+- [ ] DS-strategy/current/DayPlan обновлён (статусы ВСЕХ строк в таблице: РП + ad-hoc)
 - [ ] Captures применены
 - [ ] **Selective Reindex:** Pack изменены? → `selective-reindex.sh`
 - [ ] **Repo CLAUDE.md:** feat-коммиты → новые правила для CLAUDE.md репо?
 - [ ] **WP context:** коммиты реализуют пункт WP-плана → пункт done?
 - [ ] **Draft-list:** Pack обогащён → предложить черновик? Черновики из сессии → draft-list обновлён?
-- [ ] Backup → DS-my-strategy/exocortex/ синхронизирован (dated snapshot)
+- [ ] **Видео:** обработанные видео помечены, captures извлечены (если video.enabled)
+- [ ] **CHANGELOG шаблона:** коммиты в FMT-exocortex-template? → обновить `FMT-exocortex-template/CHANGELOG.md` (новая версия или дописать в текущую)
+- [ ] Backup → DS-strategy/exocortex/ синхронизирован
 - [ ] Context file: done → `mv inbox/WP-*.md → archive/wp-contexts/` (сразу при Close)
 - [ ] Отчёт Close сформирован
 - [ ] WP Context File создан/обновлён при ПЕРВОМ Close
@@ -104,7 +212,8 @@
 
 | Протокол | Роль-владелец | Где описан |
 |----------|---------------|-----------|
-| Open, Work, Close | R6 Кодировщик | CLAUDE.md + protocol-*.md |
+| Open, Work, Close (§ День) | R1 Стратег | protocol-*.md § День |
+| Open, Work, Close (§ Сессия) | R6 Кодировщик | protocol-*.md § Сессия |
 | Session-Close Extraction | R2 Экстрактор | extractor/prompts/session-close.md |
 | On-Demand Extraction | R2 Экстрактор | extractor/prompts/on-demand.md |
 | Bulk Extraction | R2 Экстрактор | extractor/prompts/bulk-extraction.md |
@@ -114,7 +223,7 @@
 | Ontology Sync | R2 Экстрактор | extractor/prompts/ontology-sync.md |
 | Session-Prep | R1 Стратег | strategist/prompts/session-prep.md |
 | Strategy-Session | R1 Стратег | strategist/prompts/strategy-session.md |
-| Day-Plan | R1 Стратег | strategist/prompts/day-plan.md |
+| Day-Plan | R1 Стратег | protocol-open.md § День (deprecated: strategist/prompts/day-plan.md) |
 | Note-Review | R1 Стратег | strategist/prompts/note-review.md |
-| Day-Close | R1 Стратег | strategist/prompts/day-close.md |
+| Day-Close | R1 Стратег | protocol-close.md § День (deprecated: strategist/prompts/day-close.md) |
 | Week-Review | R1 Стратег | strategist/prompts/week-review.md |

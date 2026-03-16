@@ -44,7 +44,9 @@
 | Документ | Код |
 |----------|-----|
 | Тиры обслуживания | DP.ARCH.002 |
+| Каталог ролей (Role-Centric) | DP.ROLE.001 § 3.2 |
 | Role-Centric Architecture | DP.D.033 |
+| Реестр исполнителей | DP.ROLE.001 § 3.1 |
 | Runbook ошибок бота | DP.RUNBOOK.001 |
 
 ## MCP
@@ -60,7 +62,16 @@
 | Файл | Путь |
 |------|------|
 | Стратегия | `DS-strategy/docs/Strategy.md` |
+| Реестр всех РП (WP-1…WP-85+) | `DS-strategy/docs/WP-REGISTRY.md` |
 | WeekPlan | `DS-strategy/current/` |
+
+## GitHub-организации (НЕ путать!)
+
+| Org | Какие репо | Примеры |
+|-----|-----------|---------|
+| `ailev` | FPF | `ailev/FPF` |
+
+> **Правило:** При генерации GitHub-ссылки → проверь org по этой таблице. НЕ подставляй `aisystant` по умолчанию.
 
 ## WP Context Files
 

@@ -90,7 +90,7 @@ open -a WakaTime
 ```bash
 echo '{"cwd": "'$(pwd)'", "hook_event_name": "UserPromptSubmit", "prompt": "test"}' | ~/.claude/hooks/wakatime-heartbeat.sh
 sleep 3
-wakatime-cli --today
+~/.wakatime/wakatime-cli --today
 ```
 
 Покажи результат пользователю. Скажи: «Хуки подхватятся при следующем запуске Claude Code (хуки загружаются при старте сессии).»

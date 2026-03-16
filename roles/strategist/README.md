@@ -1,7 +1,7 @@
 # Стратег (R1)
 
 > **Модуль шаблона:** `roles/strategist/` в [FMT-exocortex-template](../../README.md)
-> **Роль:** R1 Стратег — планирование и отслеживание (DP.D.033 §7, DP.AGENT.001)
+> **Роль:** R1 Стратег — планирование и отслеживание (DP.D.033 §7, DP.ROLE.001)
 
 Роль Стратег автоматизирует операционное планирование: утренние планы, вечерние итоги, недельные обзоры. Текущий исполнитель: Claude (A1, Grade 3-4).
 
@@ -13,21 +13,20 @@
 FMT-exocortex-template/              DS-strategy/ (отдельный репо)
   roles/strategist/                     current/
     prompts/                              WeekPlan W{N}.md
-      session-prep.md                     WeekReport W{N}.md
-      strategy-session.md                 DayPlan YYYY-MM-DD.md
-      day-plan.md                       docs/
-      evening.md                          Strategy.md
-      week-review.md                      Dissatisfactions.md
-      add-wp.md                         inbox/
-      check-plan.md                       WP-{N}-*.md (контексты задач)
-      day-close.md                      archive/
-      note-review.md
-    scripts/
-      strategist.sh
+      add-wp.md                           WeekReport W{N}.md
+      check-plan.md                       DayPlan YYYY-MM-DD.md
+      evening.md                        docs/
+    scripts/                              Strategy.md
+      strategist.sh                       Dissatisfactions.md
+  memory/                              inbox/
+    protocol-open.md  (← day-plan)       WP-{N}-*.md (контексты задач)
+    protocol-close.md (← day-close)    archive/
 ```
 
+> **Примечание:** Промпты `session-prep`, `strategy-session`, `day-plan`, `week-review`, `day-close`, `note-review` вынесены из шаблона. `day-plan` и `day-close` мигрировали в протоколы `memory/protocol-open.md` и `memory/protocol-close.md`. Остальные создаются пользователем в его DS-репо при установке.
+
 **Потоки данных:**
-- Промпты (PLATFORM) → обновляются через `update.sh`
+- Промпты (PLATFORM) → `prompts/` (3 базовых) + `memory/protocol-*.md`
 - Результаты (PERSONAL) → DS-strategy/ (отдельный приватный репо, не затрагивается обновлениями)
 - Входные данные: MEMORY.md, MAPSTRATEGIC.md (из каждого репо), WakaTime
 
@@ -47,15 +46,15 @@ FMT-exocortex-template/              DS-strategy/ (отдельный репо)
 
 | # | Сценарий | Промпт | Триггер | Статус |
 |---|----------|--------|---------|--------|
-| 1 | Подготовка к сессии | `session-prep.md` | Пн утро (headless) | Реализован |
-| 1b | Сессия стратегирования | `strategy-session.md` | Вручную (интерактив) | Реализован |
-| 2 | План на день | `day-plan.md` | Вт-Вс утро + вручную | Реализован |
-| 3 | Вечерний итог | `evening.md` | Вручную | Реализован |
-| 4 | Итоги недели | `week-review.md` | Вс ночь | Реализован |
-| 5 | Добавить РП | `add-wp.md` | Вручную | Реализован |
-| 6 | Проверить задачу (WP Gate) | `check-plan.md` | WP Gate | Реализован |
-| 7 | Закрытие дня | `day-close.md` | Вручную | Реализован |
-| 8 | Обзор заметок | `note-review.md` | По необходимости | Реализован |
+| 1 | Подготовка к сессии | DS: `session-prep.md` | Пн утро (headless) | Создаётся пользователем |
+| 1b | Сессия стратегирования | DS: `strategy-session.md` | Вручную (интерактив) | Создаётся пользователем |
+| 2 | План на день | `memory/protocol-open.md` | Вт-Вс утро + вручную | В шаблоне |
+| 3 | Вечерний итог | `prompts/evening.md` | Вручную | В шаблоне |
+| 4 | Итоги недели | DS: `week-review.md` | Вс ночь | Создаётся пользователем |
+| 5 | Добавить РП | `prompts/add-wp.md` | Вручную | В шаблоне |
+| 6 | Проверить задачу (WP Gate) | `prompts/check-plan.md` | WP Gate | В шаблоне |
+| 7 | Закрытие дня | `memory/protocol-close.md` | Вручную | В шаблоне |
+| 8 | Обзор заметок | DS: `note-review.md` | По необходимости | Создаётся пользователем |
 
 ---
 

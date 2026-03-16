@@ -1,0 +1,46 @@
+# Day Rhythm Configuration (L4 Personal)
+# Override defaults from IWE Template (L3).
+# Agent reads this file at Day Open and during Day Work.
+
+day_open:
+  strategy_day: monday          # Day for strategizing session (monday..sunday)
+  self_dev_slot: 1              # Slot number for self-development (always first by default)
+  self_dev_missing_alert: true  # Explicitly say if no self-dev in today's plan
+
+news:
+  enabled: false                # Enable news digest at Day Open (requires WebSearch)
+  max_items_per_topic: 3
+  topics:
+    - name: AI
+      query: "artificial intelligence LLM agents"
+      feeds: []                 # RSS URLs (empty = WebSearch fallback)
+    - name: Engineering
+      query: "software engineering systems thinking"
+      feeds: []
+
+video:
+  enabled: false                # Enable video scanning at Day Open
+  directories: []               # Local directories with video recordings
+  # Examples:
+  #   - ~/Documents/Zoom
+  #   - ~/Documents/Телемост
+  #   - ~/Видеозаписи Телемост
+  extensions: [mp4, mov, webm, m4a, mp3]
+  stale_days: 3                 # Remind about unprocessed videos older than N days
+  naming_patterns:              # Patterns for auto-matching to WP
+    - "WP-{N}-*"               # Direct WP reference in filename
+    - "{date}-*"               # Date-based matching (YYYY-MM-DD)
+  transcripts_dir: transcripts/ # Relative to first directory in list
+  auto_transcribe:
+    enabled: false              # Requires whisper CLI installed
+    engine: whisper             # whisper | whisper.cpp
+    min_duration_minutes: 5     # Only transcribe videos longer than N min
+  content:
+    suggest_posts: true         # Suggest post ideas from transcribed videos
+
+pomodoro:
+  work_minutes: 25
+  break_minutes: 5
+  long_break_minutes: 15
+  sessions_before_long_break: 4
+  session_alert_minutes: 50     # Remind to take a break after this many minutes

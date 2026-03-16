@@ -6,7 +6,7 @@
 
 1. **WP Gate:** Задание → проверь РП в таблице ниже → нет = СТОП (CLAUDE.md § 2)
 2. **Close:** push ≠ закрытие → capture-to-pack + подтверждение + backup (CLAUDE.md § 2)
-3. **ArchGate ≥8:** Предлагать ТОЛЬКО решения с оценкой ≥8 по ArchGate (ЭМОГССБ). Слабые решения (≤7) — НЕ предлагать.
+3. **ArchGate ≥8:** Предлагать ТОЛЬКО решения с оценкой ≥8 по ArchGate (ЭМОГСС). Слабые решения (≤7) — НЕ предлагать.
 
 ## ВАЖНЫЕ (проверяй на рубежах)
 
@@ -35,6 +35,7 @@
 | Правила по типам репо | `memory/repo-type-rules.md` |
 | Чеклисты | `memory/checklists.md` |
 | **SOTA-практики** | `memory/sota-reference.md` |
-| Протокол работы | `memory/protocol-work.md` |
+| Обслуживание CLAUDE.md | `memory/claude-md-maintenance.md` |
+| Урок WP Gate | `memory/wp-gate-lesson.md` |
 | **Системно-специфичное** | **→ repo/CLAUDE.md** |
-| Стратег | `roles/strategist/README.md` (в шаблоне) |
+| Стратег | `DS-strategist/README.md` |

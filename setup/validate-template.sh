@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-TEMPLATE_DIR="${1:-$HOME/Github/FMT-exocortex-template}"
+TEMPLATE_DIR="${1:-$HOME/IWE/FMT-exocortex-template}"
 FAIL=0
 
 echo "=== Validating: $TEMPLATE_DIR ==="
@@ -26,46 +26,54 @@ grep_count() {
 echo -n "[1/5] Author-specific content... "
 CHECK1_FAIL=0
 for pattern in "tserentserenov" "PACK-MIM" "aist_bot_newarchitecture" "DS-Knowledge-Index-Tseren"; do
-    # Исключаем github.com URLs — это ссылки на публичные reference implementations
+    # Исключаем: github.com URLs (публичные ссылки), validate-template.sh (содержит паттерны поиска)
     count=$(grep -rn "$pattern" "$TEMPLATE_DIR" --include="*.md" --include="*.sh" \
-            --include="*.json" --include="*.plist" --include="*.yaml" 2>/dev/null \
+            --include="*.json" --include="*.plist" --include="*.yaml" \
+            --exclude='validate-template.sh' 2>/dev/null \
             | grep -v 'github.com/' | wc -l | tr -d ' ' || true)
     if [ "$count" -gt 0 ]; then
         [ "$CHECK1_FAIL" -eq 0 ] && echo "FAIL"
         echo "  Found '$pattern' in $count non-URL locations:"
         grep -rn "$pattern" "$TEMPLATE_DIR" --include="*.md" --include="*.sh" \
-            --include="*.json" --include="*.plist" 2>/dev/null | grep -v 'github.com/' | head -3 || true
+            --include="*.json" --include="*.plist" \
+            --exclude='validate-template.sh' 2>/dev/null | grep -v 'github.com/' | head -3 || true
         CHECK1_FAIL=1
         FAIL=1
     fi
 done
 [ "$CHECK1_FAIL" -eq 0 ] && echo "PASS"
 
-# 2. Нет захардкоженных /Users/ путей (исключаем шаблонные примеры вида /Users/.../)
+# 2. Нет захардкоженных /Users/ путей (исключаем: шаблонные /Users/.../,
+#    validate-template.sh (мета-проверки), setup.sh (примеры вида /Users/alice/))
 echo -n "[2/5] Hardcoded /Users/ paths... "
 count=$(grep -rn '/Users/' "$TEMPLATE_DIR" --include="*.md" --include="*.sh" \
-        --include="*.json" --include="*.plist" 2>/dev/null \
+        --include="*.json" --include="*.plist" \
+        --exclude='validate-template.sh' --exclude='setup.sh' 2>/dev/null \
         | grep -v '/Users/\.\.\./' | wc -l | tr -d ' ' || true)
 if [ "$count" -gt 0 ]; then
     echo "FAIL ($count hits)"
-    grep -rn '/Users/' "$TEMPLATE_DIR" --include="*.md" --include="*.sh" 2>/dev/null \
+    grep -rn '/Users/' "$TEMPLATE_DIR" --include="*.md" --include="*.sh" \
+        --exclude='validate-template.sh' --exclude='setup.sh' 2>/dev/null \
         | grep -v '/Users/\.\.\./' | head -3 || true
     FAIL=1
 else
     echo "PASS"
 fi
 
-# 3. Нет захардкоженных /opt/homebrew путей (кроме README примеров, CI и PATH в plist)
+# 3. Нет захардкоженных /opt/homebrew путей (кроме README, CI, PATH в plist,
+#    validate-template.sh (мета-проверки), setup.sh (fallback default))
 echo -n "[3/5] Hardcoded /opt/homebrew paths... "
 count=$(grep -rn '/opt/homebrew' "$TEMPLATE_DIR" --include="*.md" --include="*.sh" \
-        --include="*.json" --include="*.plist" 2>/dev/null \
+        --include="*.json" --include="*.plist" \
+        --exclude='validate-template.sh' --exclude='setup.sh' 2>/dev/null \
         | grep -v 'README.md' \
         | grep -v 'validate-template.yml' \
         | grep -v '/usr/local/bin.*:/opt/homebrew' \
         | wc -l | tr -d ' ' || true)
 if [ "$count" -gt 0 ]; then
     echo "FAIL ($count hits)"
-    grep -rn '/opt/homebrew' "$TEMPLATE_DIR" --include="*.md" --include="*.sh" 2>/dev/null \
+    grep -rn '/opt/homebrew' "$TEMPLATE_DIR" --include="*.md" --include="*.sh" \
+        --exclude='validate-template.sh' --exclude='setup.sh' 2>/dev/null \
         | grep -v 'README.md' | grep -v 'validate-template.yml' | head -3 || true
     FAIL=1
 else

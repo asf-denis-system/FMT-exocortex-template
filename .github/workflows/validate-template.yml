@@ -77,6 +77,7 @@ jobs:
           FAIL=0
           for f in CLAUDE.md ONTOLOGY.md README.md \
                    memory/MEMORY.md memory/hard-distinctions.md \
+                   memory/roles.md \
                    roles/strategist/scripts/strategist.sh; do
             if [ ! -f "$f" ]; then
               echo "MISSING: $f"

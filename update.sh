@@ -8,17 +8,23 @@
 
 set -euo pipefail
 
+# === Cross-platform sed -i ===
+if sed --version >/dev/null 2>&1; then
+    sed_inplace() { sed -i "$@"; }
+else
+    sed_inplace() { sed -i '' "$@"; }
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # --- Определить рабочую директорию ---
-# Если скрипт в fork-е экзокортекса (FMT-exocortex)
+# Скрипт должен запускаться из корня форка экзокортекса
 if [ -f "$SCRIPT_DIR/CLAUDE.md" ] && [ -d "$SCRIPT_DIR/memory" ]; then
     EXOCORTEX_DIR="$SCRIPT_DIR"
-elif [ -d "$HOME/Github/FMT-exocortex" ]; then
-    EXOCORTEX_DIR="$HOME/Github/FMT-exocortex"
 else
     echo "ERROR: Cannot find exocortex directory."
-    echo "Run this script from your exocortex fork root or ~/Github/FMT-exocortex/"
+    echo "Run this script from your exocortex fork root:"
+    echo "  cd /path/to/your-exocortex && bash update.sh"
     exit 1
 fi
 
@@ -40,7 +46,7 @@ echo ""
 cd "$EXOCORTEX_DIR"
 
 # --- 1. Fetch upstream ---
-echo "[1/4] Fetching upstream..."
+echo "[1/6] Fetching upstream..."
 if ! git remote | grep -q upstream; then
     echo "  Adding upstream remote..."
     git remote add upstream https://github.com/TserenTserenov/FMT-exocortex-template.git
@@ -72,47 +78,135 @@ if $CHECK_ONLY; then
     exit 0
 fi
 
-if $DRY_RUN; then
-    echo "[DRY RUN] Would merge $COMMITS_BEHIND commits and reinstall platform-space."
-    echo ""
-    echo "Files that would change:"
-    git diff --stat HEAD..upstream/main | sed 's/^/  /'
-    exit 0
-fi
-
 # --- 3. Merge upstream ---
-echo "[2/4] Merging upstream..."
+echo "[2/6] Merging upstream..."
 
-# Stash local changes if any
-STASHED=false
-if ! git diff --quiet || ! git diff --cached --quiet; then
-    echo "  Stashing local changes..."
-    git stash push -m "pre-update stash $(date +%Y-%m-%d)"
-    STASHED=true
+if $DRY_RUN; then
+    echo "  [DRY RUN] Would merge $COMMITS_BEHIND commits"
+    echo "  Files that would change:"
+    git diff --stat HEAD..upstream/main | sed 's/^/    /'
+else
+    # Stash local changes if any
+    STASHED=false
+    if ! git diff --quiet || ! git diff --cached --quiet; then
+        echo "  Stashing local changes..."
+        git stash push -m "pre-update stash $(date +%Y-%m-%d)"
+        STASHED=true
+    fi
+
+    if ! git merge upstream/main --no-edit 2>&1 | sed 's/^/  /'; then
+        echo ""
+        echo "ERROR: Merge conflict. Resolve manually:"
+        echo "  cd $EXOCORTEX_DIR"
+        echo "  git status  # see conflicting files"
+        echo "  # resolve conflicts, then: git add . && git merge --continue"
+        exit 1
+    fi
+
+    # Restore stash if needed
+    if $STASHED; then
+        echo "  Restoring local changes..."
+        git stash pop || echo "  WARN: Stash pop conflict. Run 'git stash pop' manually."
+    fi
 fi
 
-if ! git merge upstream/main --no-edit 2>&1 | sed 's/^/  /'; then
+# --- 3. Re-substitute placeholders ---
+echo "[3/6] Re-substituting placeholders..."
+
+# After merge, new lines from upstream may contain {{WORKSPACE_DIR}} etc.
+# Detect values from the current environment
+PLACEHOLDER_COUNT=$(grep -r '{{WORKSPACE_DIR}}' "$EXOCORTEX_DIR" --include="*.md" --include="*.sh" --include="*.json" --include="*.yaml" --include="*.yml" --include="*.plist" -l 2>/dev/null | wc -l | tr -d ' ')
+
+if [ "$PLACEHOLDER_COUNT" -gt 0 ]; then
+    echo "  Found $PLACEHOLDER_COUNT files with unsubstituted {{WORKSPACE_DIR}}"
+    if $DRY_RUN; then
+        echo "  [DRY RUN] Would re-substitute {{WORKSPACE_DIR}} → $WORKSPACE_DIR in $PLACEHOLDER_COUNT files"
+    else
+        find "$EXOCORTEX_DIR" -type f \( -name "*.md" -o -name "*.json" -o -name "*.sh" -o -name "*.plist" -o -name "*.yaml" -o -name "*.yml" \) | while read file; do
+            sed_inplace "s|{{WORKSPACE_DIR}}|$WORKSPACE_DIR|g" "$file"
+        done
+        echo "  Re-substituted {{WORKSPACE_DIR}} → $WORKSPACE_DIR"
+
+        # Commit the re-substitution
+        if ! git -C "$EXOCORTEX_DIR" diff --quiet; then
+            git -C "$EXOCORTEX_DIR" add -A
+            git -C "$EXOCORTEX_DIR" commit -m "chore: re-substitute placeholders after upstream merge" --no-verify 2>&1 | sed 's/^/  /'
+        fi
+    fi
+else
+    echo "  No unsubstituted placeholders found"
+fi
+
+# Check for any remaining placeholders (other than WORKSPACE_DIR)
+REMAINING=$(grep -r '{{[A-Z_]*}}' "$EXOCORTEX_DIR" --include="*.md" --include="*.sh" --include="*.json" --include="*.yaml" -l 2>/dev/null | wc -l | tr -d ' ')
+if [ "$REMAINING" -gt 0 ]; then
+    echo "  WARN: $REMAINING files still have unsubstituted placeholders."
+    echo "  Run 'bash setup.sh' to re-substitute all placeholders."
+fi
+
+# --- 4. Show release notes ---
+echo "[4/6] Release notes..."
+if [ -f "$EXOCORTEX_DIR/CHANGELOG.md" ]; then
+    # Extract current version from CHANGELOG (first ## heading)
     echo ""
-    echo "ERROR: Merge conflict. Resolve manually:"
-    echo "  cd $EXOCORTEX_DIR"
-    echo "  git status  # see conflicting files"
-    echo "  # resolve conflicts, then: git add . && git merge --continue"
-    exit 1
+    echo "  ┌──────────────────────────────────────┐"
+    echo "  │         What's New                   │"
+    echo "  └──────────────────────────────────────┘"
+    # Show entries between first and second ## headings (latest version)
+    sed -n '/^## \[/,/^## \[/{/^## \[/!{/^## \[/!p}}' "$EXOCORTEX_DIR/CHANGELOG.md" | head -30 | sed 's/^/  /'
+    echo ""
+else
+    echo "  No CHANGELOG.md found"
 fi
 
-# Restore stash if needed
-if $STASHED; then
-    echo "  Restoring local changes..."
-    git stash pop || echo "  WARN: Stash pop conflict. Run 'git stash pop' manually."
-fi
-
-# --- 4. Reinstall platform-space ---
-echo "[3/5] Reinstalling platform-space..."
+# --- 5. Reinstall platform-space ---
+echo "[5/6] Reinstalling platform-space..."
 
 # Copy CLAUDE.md to workspace root
 if [ -f "$EXOCORTEX_DIR/CLAUDE.md" ]; then
-    cp "$EXOCORTEX_DIR/CLAUDE.md" "$WORKSPACE_DIR/CLAUDE.md"
-    echo "  Updated: $WORKSPACE_DIR/CLAUDE.md"
+    if $DRY_RUN; then
+        echo "  [DRY RUN] Would update: $WORKSPACE_DIR/CLAUDE.md"
+    else
+        cp "$EXOCORTEX_DIR/CLAUDE.md" "$WORKSPACE_DIR/CLAUDE.md"
+        echo "  Updated: $WORKSPACE_DIR/CLAUDE.md"
+    fi
+fi
+
+# Merge ONTOLOGY.md: Platform-space (§1-4) from upstream, User-space (§5-6) preserved
+ONTOLOGY_SRC="$EXOCORTEX_DIR/ONTOLOGY.md"
+ONTOLOGY_DST="$WORKSPACE_DIR/ONTOLOGY.md"
+if [ -f "$ONTOLOGY_SRC" ]; then
+    if [ -f "$ONTOLOGY_DST" ]; then
+        # Extract User-space sections (§5-6) from current user file
+        USER_SECTIONS=$(sed -n '/^<!-- USER-SPACE/,$p' "$ONTOLOGY_DST")
+        if [ -n "$USER_SECTIONS" ]; then
+            if $DRY_RUN; then
+                echo "  [DRY RUN] Would merge ONTOLOGY.md (platform-space from upstream, user-space preserved)"
+            else
+                # Take Platform-space (everything before USER-SPACE marker) from upstream
+                sed '/^<!-- USER-SPACE/,$d' "$ONTOLOGY_SRC" > "$ONTOLOGY_DST.tmp"
+                # Append user's sections
+                echo "$USER_SECTIONS" >> "$ONTOLOGY_DST.tmp"
+                mv "$ONTOLOGY_DST.tmp" "$ONTOLOGY_DST"
+                echo "  Updated: ONTOLOGY.md (platform-space merged, user-space preserved)"
+            fi
+        else
+            if $DRY_RUN; then
+                echo "  [DRY RUN] Would copy ONTOLOGY.md (full copy, no user-space marker found)"
+            else
+                # No user-space marker found — full copy (first install or old format)
+                cp "$ONTOLOGY_SRC" "$ONTOLOGY_DST"
+                echo "  Updated: ONTOLOGY.md (full copy, no user-space found)"
+            fi
+        fi
+    else
+        if $DRY_RUN; then
+            echo "  [DRY RUN] Would install: ONTOLOGY.md (new file)"
+        else
+            cp "$ONTOLOGY_SRC" "$ONTOLOGY_DST"
+            echo "  Installed: ONTOLOGY.md"
+        fi
+    fi
 fi
 
 # Copy memory files
@@ -122,8 +216,12 @@ if [ -d "$EXOCORTEX_DIR/memory" ] && [ -d "$CLAUDE_MEMORY_DIR" ]; then
     for f in "$EXOCORTEX_DIR/memory/"*.md; do
         fname=$(basename "$f")
         if [ "$fname" != "MEMORY.md" ]; then
-            cp "$f" "$CLAUDE_MEMORY_DIR/$fname"
-            echo "  Updated: memory/$fname"
+            if $DRY_RUN; then
+                echo "  [DRY RUN] Would update: memory/$fname"
+            else
+                cp "$f" "$CLAUDE_MEMORY_DIR/$fname"
+                echo "  Updated: memory/$fname"
+            fi
         fi
     done
     echo "  Skipped: memory/MEMORY.md (user data preserved)"
@@ -135,9 +233,12 @@ SETTINGS_SRC="$EXOCORTEX_DIR/.claude/settings.local.json"
 SETTINGS_DST="$WORKSPACE_DIR/.claude/settings.local.json"
 if [ -f "$SETTINGS_SRC" ]; then
     if [ -f "$SETTINGS_DST" ]; then
-        # Merge: take mcpServers from upstream, keep user permissions
-        if command -v python3 &>/dev/null; then
-            python3 -c "
+        if $DRY_RUN; then
+            echo "  [DRY RUN] Would merge .claude/settings.local.json (mcpServers from upstream, permissions preserved)"
+        else
+            # Merge: take mcpServers from upstream, keep user permissions
+            if command -v python3 &>/dev/null; then
+                python3 -c "
 import json, sys
 with open('$SETTINGS_SRC') as f: src = json.load(f)
 with open('$SETTINGS_DST') as f: dst = json.load(f)
@@ -152,21 +253,26 @@ dst.setdefault('permissions', {})['allow'] = merged
 with open('$SETTINGS_DST', 'w') as f: json.dump(dst, f, indent=2, ensure_ascii=False)
 print('  Updated: .claude/settings.local.json (merged)')
 " 2>&1
-        else
-            # Fallback: just copy (no merge)
-            cp "$SETTINGS_SRC" "$SETTINGS_DST"
-            echo "  Updated: .claude/settings.local.json (replaced, python3 not found for merge)"
+            else
+                # Fallback: just copy (no merge)
+                cp "$SETTINGS_SRC" "$SETTINGS_DST"
+                echo "  Updated: .claude/settings.local.json (replaced, python3 not found for merge)"
+            fi
         fi
     else
-        # First install: just copy
-        mkdir -p "$(dirname "$SETTINGS_DST")"
-        cp "$SETTINGS_SRC" "$SETTINGS_DST"
-        echo "  Installed: .claude/settings.local.json"
+        if $DRY_RUN; then
+            echo "  [DRY RUN] Would install: .claude/settings.local.json (new file)"
+        else
+            # First install: just copy
+            mkdir -p "$(dirname "$SETTINGS_DST")"
+            cp "$SETTINGS_SRC" "$SETTINGS_DST"
+            echo "  Installed: .claude/settings.local.json"
+        fi
     fi
 fi
 
-# --- 5. Reinstall roles ---
-echo "[4/5] Reinstalling roles..."
+# --- 6. Reinstall roles ---
+echo "[6/6] Reinstalling roles..."
 
 # Check which role files changed and reinstall if needed
 CHANGED_FILES=$(git diff --name-only "$LOCAL".."$UPSTREAM" 2>/dev/null || echo "")
@@ -175,9 +281,13 @@ reinstall_role() {
     local role_name="$1"
     local install_script="$EXOCORTEX_DIR/roles/$role_name/install.sh"
     if [ -f "$install_script" ]; then
-        echo "  Reinstalling $role_name..."
-        chmod +x "$install_script"
-        bash "$install_script" 2>&1 | sed 's/^/    /'
+        if $DRY_RUN; then
+            echo "  [DRY RUN] Would reinstall: $role_name"
+        else
+            echo "  Reinstalling $role_name..."
+            chmod +x "$install_script"
+            bash "$install_script" 2>&1 | sed 's/^/    /'
+        fi
     fi
 }
 
@@ -195,14 +305,21 @@ for role_dir in "$EXOCORTEX_DIR"/roles/*/; do
 done
 
 # --- Done ---
-echo "[5/5] Pushing merge commit..."
-git push 2>&1 | sed 's/^/  /'
+if $DRY_RUN; then
+    echo ""
+    echo "[DRY RUN] No changes made. Run 'update.sh' to apply."
+else
+    echo "Pushing merge commit..."
+    git push 2>&1 | sed 's/^/  /'
+fi
 
-echo ""
-echo "=========================================="
-echo "  Update Complete!"
-echo "=========================================="
-echo "  Merged $COMMITS_BEHIND commits from upstream"
-echo "  Platform-space reinstalled"
-echo "  Roles checked for reinstallation"
-echo ""
+if ! $DRY_RUN; then
+    echo ""
+    echo "=========================================="
+    echo "  Update Complete!"
+    echo "=========================================="
+    echo "  Merged $COMMITS_BEHIND commits from upstream"
+    echo "  Platform-space reinstalled"
+    echo "  Roles checked for reinstallation"
+    echo ""
+fi

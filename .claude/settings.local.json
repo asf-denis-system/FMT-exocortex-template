@@ -31,15 +31,5 @@
       "mcp__ddt__read_digital_twin",
       "mcp__ddt__write_digital_twin"
     ]
-  },
-  "mcpServers": {
-    "knowledge-mcp": {
-      "type": "url",
-      "url": "https://knowledge-mcp.aisystant.workers.dev/mcp"
-    },
-    "ddt": {
-      "type": "url",
-      "url": "https://digital-twin-mcp.aisystant.workers.dev/mcp"
-    }
   }
 }

@@ -39,7 +39,10 @@ log() {
 notify() {
     local title="$1"
     local message="$2"
-    printf 'display notification "%s" with title "%s"' "$message" "$title" | osascript 2>/dev/null || true
+    # macOS: osascript, Linux: notify-send, fallback: silent
+    printf 'display notification "%s" with title "%s"' "$message" "$title" | osascript 2>/dev/null \
+        || notify-send "$title" "$message" 2>/dev/null \
+        || true
 }
 
 notify_telegram() {

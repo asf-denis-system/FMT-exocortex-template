@@ -7,7 +7,7 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>c:/Users/Денис/Github/FMT-exocortex-template/roles/strategist/scripts/strategist.sh</string>
+        <string>{{WORKSPACE_DIR}}/FMT-exocortex-template/roles/strategist/scripts/strategist.sh</string>
         <string>week-review</string>
     </array>
 
@@ -22,17 +22,17 @@
     </dict>
 
     <key>StandardOutPath</key>
-    <string>c:/Users/Денис/logs/strategist/launchd-weekreview.log</string>
+    <string>{{HOME_DIR}}/logs/strategist/launchd-weekreview.log</string>
 
     <key>StandardErrorPath</key>
-    <string>c:/Users/Денис/logs/strategist/launchd-weekreview-error.log</string>
+    <string>{{HOME_DIR}}/logs/strategist/launchd-weekreview-error.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
         <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
         <key>HOME</key>
-        <string>c:/Users/Денис</string>
+        <string>{{HOME_DIR}}</string>
     </dict>
 
     <key>RunAtLoad</key>
