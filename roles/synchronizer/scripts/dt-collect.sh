@@ -16,6 +16,13 @@
 
 set -euo pipefail
 
+# Cross-platform date offset: portable_date_offset <days_back> <format>
+portable_date_offset() {
+    local days="$1"
+    local fmt="${2:-%Y-%m-%d}"
+    date -v-${days}d +"$fmt" 2>/dev/null || date -d "$days days ago" +"$fmt" 2>/dev/null
+}
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WORKSPACE="$HOME/IWE"
 LOG_DIR="$HOME/logs/synchronizer"
@@ -71,12 +78,12 @@ collect_wakatime() {
     TODAY_RESP=$(curl -s -H "Authorization: Basic $ENCODED" "$API/summaries?start=$DATE&end=$DATE" 2>/dev/null || echo "{}")
 
     # Last 7 days
-    local D7=$(date -v-7d +%Y-%m-%d)
+    local D7=$(portable_date_offset 7)
     local WEEK_RESP
     WEEK_RESP=$(curl -s -H "Authorization: Basic $ENCODED" "$API/summaries?start=$D7&end=$DATE" 2>/dev/null || echo "{}")
 
     # Last 30 days
-    local D30=$(date -v-30d +%Y-%m-%d)
+    local D30=$(portable_date_offset 30)
     local MONTH_RESP
     MONTH_RESP=$(curl -s -H "Authorization: Basic $ENCODED" "$API/summaries?start=$D30&end=$DATE" 2>/dev/null || echo "{}")
 
