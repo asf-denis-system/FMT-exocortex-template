@@ -109,7 +109,7 @@ IWE подходит тем, кто:
 
 ```bash
 cd ~/IWE
-git clone https://github.com/TserenTserenov/FMT-exocortex-template.git
+gh repo fork TserenTserenov/FMT-exocortex-template --clone
 cd FMT-exocortex-template
 bash setup.sh
 ```

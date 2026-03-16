@@ -24,7 +24,7 @@ portable_date_offset() {
 }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-WORKSPACE="$HOME/IWE"
+WORKSPACE="{{WORKSPACE_DIR}}"
 LOG_DIR="$HOME/logs/synchronizer"
 DATE=$(date +%Y-%m-%d)
 LOG_FILE="$LOG_DIR/dt-collect-$DATE.log"

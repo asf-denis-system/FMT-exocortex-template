@@ -46,7 +46,7 @@ echo ""
 cd "$EXOCORTEX_DIR"
 
 # --- 1. Fetch upstream ---
-echo "[1/4] Fetching upstream..."
+echo "[1/6] Fetching upstream..."
 if ! git remote | grep -q upstream; then
     echo "  Adding upstream remote..."
     git remote add upstream https://github.com/TserenTserenov/FMT-exocortex-template.git
@@ -79,7 +79,7 @@ if $CHECK_ONLY; then
 fi
 
 # --- 3. Merge upstream ---
-echo "[2/4] Merging upstream..."
+echo "[2/6] Merging upstream..."
 
 if $DRY_RUN; then
     echo "  [DRY RUN] Would merge $COMMITS_BEHIND commits"

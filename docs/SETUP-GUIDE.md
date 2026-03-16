@@ -198,7 +198,7 @@ cd ~/IWE
 cd ~/IWE
 
 # Форкнуть шаблон на свой GitHub и склонировать
-gh repo fork TserenTserenov/FMT-exocortex-template --clone --remote
+gh repo fork TserenTserenov/FMT-exocortex-template --clone
 cd FMT-exocortex-template
 
 # Запустить установку
@@ -249,19 +249,16 @@ launchctl list | grep strategist
 
 MCP (Model Context Protocol) — это доступ Claude Code к базе знаний платформы: документам, руководствам, цифровому двойнику. Подключение настроено автоматически через `.claude/settings.local.json`.
 
-В Claude Code (VS Code или терминале):
-```
-# Открой Claude Code в папке экзокортекса
+Открой Claude Code в папке экзокортекса:
+```bash
 cd ~/IWE/FMT-exocortex-template
 claude
-
-# В Claude Code выполни:
-knowledge-mcp search("принципы")
-# Ожидаемый результат: список документов из базы знаний
-
-knowledge-mcp search("методы саморазвития", source_type="guides")
-# Ожидаемый результат: список образовательных руководств
 ```
+
+В диалоге с Claude попроси:
+> Найди документы про принципы
+
+Claude должен использовать `knowledge-mcp search("принципы")` и вернуть список документов из базы знаний.
 
 > **Не работает?** Проверь файл `.claude/settings.local.json` — должен содержать секцию `mcpServers` с двумя серверами (knowledge-mcp, ddt). Если файла нет — запусти `bash update.sh` для обновления.
 

@@ -48,7 +48,7 @@
 
 **Новый пользовательский flow:**
 ```bash
-gh repo fork TserenTserenov/FMT-exocortex-template --clone --remote
+gh repo fork TserenTserenov/FMT-exocortex-template --clone
 cd FMT-exocortex-template
 bash setup.sh
 ```

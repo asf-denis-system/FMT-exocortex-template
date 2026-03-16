@@ -66,7 +66,7 @@ if [ ! -f "$TEMPLATE_DIR/CLAUDE.md" ] || [ ! -d "$TEMPLATE_DIR/memory" ]; then
     echo "  Expected: $TEMPLATE_DIR/CLAUDE.md and $TEMPLATE_DIR/memory/"
     echo ""
     echo "  Steps:"
-    echo "    gh repo fork TserenTserenov/FMT-exocortex-template --clone --remote"
+    echo "    gh repo fork TserenTserenov/FMT-exocortex-template --clone"
     echo "    cd FMT-exocortex-template"
     echo "    bash setup.sh"
     exit 1

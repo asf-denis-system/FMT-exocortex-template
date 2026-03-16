@@ -1542,19 +1542,6 @@ WP Gate **обязан** срабатывать на каждое задание
 
 ---
 
-#### «DS-strategy или DS-my-strategy?»
-
-В протоколах написано `DS-my-strategy`. setup.sh по умолчанию создаёт `DS-strategy`. **Переименуй** на `DS-my-strategy`, чтобы совпадало:
-
-```bash
-mv ~/IWE/DS-strategy ~/IWE/DS-my-strategy
-cd ~/IWE/DS-my-strategy && git remote set-url origin <новый-url>
-```
-
-Или оставь как есть и замени имя в `memory/navigation.md`. Главное — единообразие.
-
----
-
 #### «Зачем такая структура папок?»
 
 ```
