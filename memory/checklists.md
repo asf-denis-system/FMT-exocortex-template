@@ -29,7 +29,7 @@
 
 - [ ] `grep -r "Github/<old-path>/"` по ВСЕМ репо — найти ВСЕ внутренние ссылки
 - [ ] Скрипты (.sh): hardcoded пути `$HOME/Github/...`
-- [ ] Промпты (.md): `{{WORKSPACE_DIR}}/...` пути к config/routing
+- [ ] Промпты (.md): `c:/Users/Денис/projects/github/...` пути к config/routing
 - [ ] Конфиги (config.yaml): `script:` поля
 - [ ] LaunchD templates (.plist): `<string>/Users/.../</string>`
 - [ ] Загруженные plist в `~/Library/LaunchAgents/` (отдельно от шаблонов в репо!)

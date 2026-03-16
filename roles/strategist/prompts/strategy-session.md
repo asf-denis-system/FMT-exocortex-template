@@ -4,11 +4,11 @@
 
 ## Контекст
 
-- **HUB (личные планы):** {{WORKSPACE_DIR}}/DS-strategy/current/
-- **Документы стратегии:** {{WORKSPACE_DIR}}/DS-strategy/docs/ (Strategy.md, Dissatisfactions.md, Session Agenda.md)
-- **Inbox:** {{WORKSPACE_DIR}}/DS-strategy/inbox/
-- **SPOKE (планы репо):** {{WORKSPACE_DIR}}/*/WORKPLAN.md
-- **MEMORY:** ~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/MEMORY.md
+- **HUB (личные планы):** c:/Users/Денис/projects/github/DS-strategy/current/
+- **Документы стратегии:** c:/Users/Денис/projects/github/DS-strategy/docs/ (Strategy.md, Dissatisfactions.md, Session Agenda.md)
+- **Inbox:** c:/Users/Денис/projects/github/DS-strategy/inbox/
+- **SPOKE (планы репо):** c:/Users/Денис/projects/github/*/WORKPLAN.md
+- **MEMORY:** ~/.claude/projects/c--Users-------projects-github/memory/MEMORY.md
 
 ## Предусловие
 

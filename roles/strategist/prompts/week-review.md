@@ -7,7 +7,7 @@
 
 ## Контекст
 
-- **WeekPlan:** {{WORKSPACE_DIR}}/DS-strategy/current/WeekPlan W*.md
+- **WeekPlan:** c:/Users/Денис/projects/github/DS-strategy/current/WeekPlan W*.md
 - **Шаблон:** см. секцию «Шаблон WeekReport» ниже
 
 ### 0. WakaTime — время работы за неделю
@@ -23,11 +23,11 @@
 ### 1. Сбор данных (Стратег собирает сам)
 
 ```bash
-# Для КАЖДОГО репо в {{WORKSPACE_DIR}}/:
-git -C {{WORKSPACE_DIR}}/<repo> log --since="last monday 00:00" --until="today 00:00" --oneline --no-merges
+# Для КАЖДОГО репо в c:/Users/Денис/projects/github/:
+git -C c:/Users/Денис/projects/github/<repo> log --since="last monday 00:00" --until="today 00:00" --oneline --no-merges
 ```
 
-- Пройди по ВСЕМ репозиториям в `{{WORKSPACE_DIR}}/`
+- Пройди по ВСЕМ репозиториям в `c:/Users/Денис/projects/github/`
 - Загрузи текущий WeekPlan из `DS-strategy/current/`
 - Сопоставь коммиты с РП из WeekPlan
 - Определи статус каждого РП: done / partial / not started
@@ -61,12 +61,12 @@ git -C {{WORKSPACE_DIR}}/<repo> log --since="last monday 00:00" --until="today 0
 ### 6. Создать пост для клуба (опционально)
 
 > Шаг выполняется только если у пользователя настроен Knowledge Index — surface downstream репо для публикаций.
-> Проверь: существует ли директория `{{WORKSPACE_DIR}}/DS-Knowledge-Index-{{GITHUB_USER}}/`?
+> Проверь: существует ли директория `c:/Users/Денис/projects/github/DS-Knowledge-Index-asf-denis-system/`?
 > Если нет — пропусти шаг 6 полностью.
 
 1. Переключись на **роль Автора (R4)** и на основе WeekReport сформируй пост для клуба.
 
-   **Обязательно прочитай** `{{WORKSPACE_DIR}}/DS-Knowledge-Index-{{GITHUB_USER}}/CLAUDE.md` — полные инструкции роли Автора:
+   **Обязательно прочитай** `c:/Users/Денис/projects/github/DS-Knowledge-Index-asf-denis-system/CLAUDE.md` — полные инструкции роли Автора:
    - § 2 — стандарт названий для итогов недели
    - § 3 — формат поста: аудитория `community`, структура для тега `итоги-недели`
 
@@ -80,7 +80,7 @@ git -C {{WORKSPACE_DIR}}/<repo> log --since="last monday 00:00" --until="today 0
 
    Выбери лучшее название сам (в автоматическом режиме нет пользователя для выбора).
 
-2. Создай файл `{{WORKSPACE_DIR}}/DS-Knowledge-Index-{{GITHUB_USER}}/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N}.md`
+2. Создай файл `c:/Users/Денис/projects/github/DS-Knowledge-Index-asf-denis-system/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N}.md`
 
 3. Frontmatter:
 
@@ -98,7 +98,7 @@ content_plan: null
 ---
 ```
 
-4. Обнови `{{WORKSPACE_DIR}}/DS-Knowledge-Index-{{GITHUB_USER}}/docs/README.md` — добавь строку в начало текущего месяца
+4. Обнови `c:/Users/Денис/projects/github/DS-Knowledge-Index-asf-denis-system/docs/README.md` — добавь строку в начало текущего месяца
 5. Закоммить и запушь Knowledge Index (git add docs/ && git commit && git push)
 
 **Шаблон WeekReport:**
